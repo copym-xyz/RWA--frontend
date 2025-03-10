@@ -3,11 +3,8 @@ import React from 'react'
 const App = () => {
   return (
     <div>
-      vimal
-      hanan 
-      anas 
-      rayif
       
+      hanan
     </div>
   )
 }
