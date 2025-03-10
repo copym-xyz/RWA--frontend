@@ -1,0 +1,83 @@
+# Dependency directories
+node_modules/
+
+
+# Build output
+dist/
+build/
+out/
+.next/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+
+
+
+# Frontend build
+frontend/build
+frontend/dist
+
+# Logs
+logs/
+*.log
+
+# IDE and Editor folders
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Compiled binary files
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Backup files
+*.bak
+*.gho
+*.ori
+*.orig
+*.tmp
+
+# Testing
+.nyc_output/
+junit.xml
+
+# Temporary files
+tmp/
+temp/
+
+# Package lock files (optional, depends on your preference)
+package-lock.json
+yarn.lock
+
+# Hardhat and blockchain specific
+node_modules
+.env
+coverage
+coverage.json
+typechain
+typechain-types
+
+# Solidity compiler output
+*.bin
+*.abi
+
+# Specific to your project
+backend/uploads/
+frontend/src/contracts/abis/
