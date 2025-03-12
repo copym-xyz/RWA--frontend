@@ -1,425 +1,260 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
-import { API_URL, BLOCKCHAIN_CONFIG } from '../config';
-
-// Icons
+import { useWallet } from '../hooks/useWallet';
+import { useIdentity } from '../hooks/useIdentity';
 import { 
-  IdentificationIcon, 
-  ShieldCheckIcon, 
-  ArrowsRightLeftIcon, 
-  UserCircleIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon
-} from '@heroicons/react/24/outline';
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { 
+  ChevronRight, 
+  Wallet, 
+  Shield, 
+  Globe, 
+  AlertCircle, 
+  CheckCircle2,
+  LinkIcon
+} from 'lucide-react';
+import IdentityForm from '../components/identity/IdentityForm';
+import ChainIdentityManager from '../components/identity/ChainIdentityManager';
+import VerificationStatus from '../components/identity/VerificationStatus';
 
 const Dashboard = () => {
-  const { currentUser, token } = useAuth();
-  const [verificationStatus, setVerificationStatus] = useState(null);
-  const [bridgeRequests, setBridgeRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  
+  const { isConnected, account, chainId, connect } = useWallet();
+  const { tokenId, getTokenInfo, isLoading, error } = useIdentity();
+  const [identity, setIdentity] = useState(null);
+
+  // Load identity information if token ID exists
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch verification status if user has a DID
-        if (currentUser?.did) {
-          const verificationResponse = await axios.get(
-            `${API_URL}/api/verification/status`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            }
-          );
-          
-          setVerificationStatus(verificationResponse.data);
+    const fetchIdentity = async () => {
+      // Check localStorage for token ID
+      const storedTokenId = localStorage.getItem('tokenId');
+      
+      if (storedTokenId) {
+        try {
+          const result = await getTokenInfo(storedTokenId);
+          if (result.success) {
+            setIdentity(result);
+          }
+        } catch (err) {
+          console.error('Error fetching identity:', err);
         }
-        
-        // Fetch bridge requests if user has a DID
-        if (currentUser?.did) {
-          const bridgeResponse = await axios.get(
-            `${API_URL}/api/bridge/requests`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            }
-          );
-          
-          setBridgeRequests(bridgeResponse.data);
-        }
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        setError(error.response?.data?.message || error.message);
-        setLoading(false);
       }
     };
-    
-    fetchUserData();
-  }, [currentUser, token]);
-  
-  // Helper function to get status badge
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'verified':
-      case 'completed':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <CheckCircleIcon className="w-4 h-4 mr-1" />
-            {status === 'verified' ? 'Verified' : 'Completed'}
-          </span>
-        );
-      case 'pending':
-      case 'processing':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            <ClockIcon className="w-4 h-4 mr-1" />
-            {status === 'pending' ? 'Pending' : 'Processing'}
-          </span>
-        );
-      case 'rejected':
-      case 'failed':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            <XCircleIcon className="w-4 h-4 mr-1" />
-            {status === 'rejected' ? 'Rejected' : 'Failed'}
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            {status}
-          </span>
-        );
+
+    if (isConnected) {
+      fetchIdentity();
     }
-  };
-  
-  // Format date for display
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-  };
-  
+  }, [isConnected, getTokenInfo]);
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
-      
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+    <div className="container mx-auto p-4 max-w-7xl">
+      <div className="flex flex-col space-y-6">
+        {/* Header */}
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Multi-Chain Identity Dashboard</h1>
+          <p className="text-muted-foreground">
+            Manage your decentralized identity across multiple blockchains
+          </p>
         </div>
-      )}
-      
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary-600"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Identity Status Card */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <div className="bg-primary-100 p-3 rounded-full mr-4">
-                <IdentificationIcon className="h-6 w-6 text-primary-600" />
-              </div>
-              <h2 className="text-lg font-semibold">Identity Status</h2>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">DID Status</p>
-                {currentUser?.did ? (
-                  <div className="flex items-center">
-                    <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-green-700">Active</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center">
-                    <XCircleIcon className="h-5 w-5 text-red-500 mr-2" />
-                    <span className="text-red-700">Not Created</span>
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Linked Blockchains</p>
-                <div className="flex space-x-2">
-                  {currentUser?.ethereumAddress && (
-                    <div className="p-1 bg-ethereum bg-opacity-10 rounded-full">
-                      <img src="/images/ethereum-logo.svg" alt="Ethereum" className="h-5 w-5" onError={(e) => { e.target.src = '/images/placeholder-logo.svg' }} />
-                    </div>
-                  )}
-                  
-                  {currentUser?.solanaAddress && (
-                    <div className="p-1 bg-solana bg-opacity-10 rounded-full">
-                      <img src="/images/solana-logo.svg" alt="Solana" className="h-5 w-5" onError={(e) => { e.target.src = '/images/placeholder-logo.svg' }} />
-                    </div>
-                  )}
-                  
-                  {currentUser?.polygonAddress && (
-                    <div className="p-1 bg-polygon bg-opacity-10 rounded-full">
-                      <img src="/images/polygon-logo.svg" alt="Polygon" className="h-5 w-5" onError={(e) => { e.target.src = '/images/placeholder-logo.svg' }} />
-                    </div>
-                  )}
-                  
-                  {!currentUser?.ethereumAddress && !currentUser?.solanaAddress && !currentUser?.polygonAddress && (
-                    <span className="text-gray-500">No blockchains linked</span>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6">
-              <Link
-                to="/identity"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 w-full justify-center"
-              >
-                Manage Identity
-              </Link>
-            </div>
-          </div>
-          
-          {/* Verification Status Card */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <div className="bg-secondary-100 p-3 rounded-full mr-4">
-                <ShieldCheckIcon className="h-6 w-6 text-secondary-600" />
-              </div>
-              <h2 className="text-lg font-semibold">Verification Status</h2>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Status</p>
-                {verificationStatus ? (
-                  getStatusBadge(verificationStatus.status)
-                ) : currentUser?.verificationStatus ? (
-                  getStatusBadge(currentUser.verificationStatus)
-                ) : (
-                  <span className="text-gray-500">Not started</span>
-                )}
-              </div>
-              
-              {verificationStatus && (
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Verification Type</p>
-                  <span className="text-gray-700 capitalize">
-                    {verificationStatus.verificationType === 'kyc' ? 'KYC (Individual)' : 'KYB (Business)'}
-                  </span>
-                </div>
-              )}
-              
-              {verificationStatus && verificationStatus.status === 'pending' && (
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Submitted</p>
-                  <span className="text-gray-700">
-                    {formatDate(verificationStatus.createdAt)}
-                  </span>
-                </div>
-              )}
-              
-              {verificationStatus && verificationStatus.status === 'rejected' && (
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Reason</p>
-                  <span className="text-red-600">
-                    {verificationStatus.metadata?.rejectionReason || 'No reason provided'}
-                  </span>
-                </div>
-              )}
-            </div>
-            
-            <div className="mt-6">
-              {(!verificationStatus || verificationStatus.status === 'rejected') && (
-                <Link
-                  to="/verification"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-secondary-600 hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-500 w-full justify-center"
-                >
-                  Start Verification
-                </Link>
-              )}
-              
-              {verificationStatus && (verificationStatus.status === 'pending' || verificationStatus.status === 'processing') && (
-                <Link
-                  to="/verification"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-secondary-600 hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-500 w-full justify-center"
-                >
-                  Check Status
-                </Link>
-              )}
-              
-              {verificationStatus && verificationStatus.status === 'verified' && (
-                <Link
-                  to="/verification"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-secondary-600 hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-500 w-full justify-center"
-                >
-                  View Details
-                </Link>
-              )}
-            </div>
-          </div>
-          
-          {/* Cross-Chain Bridge Card */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <div className="bg-gray-100 p-3 rounded-full mr-4">
-                <ArrowsRightLeftIcon className="h-6 w-6 text-gray-600" />
-              </div>
-              <h2 className="text-lg font-semibold">Cross-Chain Bridge</h2>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Recent Bridge Requests</p>
-                {bridgeRequests.length > 0 ? (
+
+        <Separator />
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* Sidebar */}
+          <div className="md:col-span-3 space-y-4">
+            {/* Wallet Card */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <Wallet className="mr-2 h-5 w-5" /> Wallet
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isConnected ? (
                   <div className="space-y-2">
-                    {bridgeRequests.slice(0, 3).map(request => (
-                      <div key={request._id} className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div className="flex items-center">
-                            <img 
-                              src={`/images/${request.sourceChain}-logo.svg`} 
-                              alt={request.sourceChain} 
-                              className="h-4 w-4" 
-                              onError={(e) => { e.target.src = '/images/placeholder-logo.svg' }}
-                            />
-                            <span className="mx-1">→</span>
-                            <img 
-                              src={`/images/${request.targetChain}-logo.svg`} 
-                              alt={request.targetChain} 
-                              className="h-4 w-4" 
-                              onError={(e) => { e.target.src = '/images/placeholder-logo.svg' }}
-                            />
-                          </div>
-                          <span className="ml-2 text-xs text-gray-500">
-                            {new Date(request.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        {getStatusBadge(request.status)}
-                      </div>
-                    ))}
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Status:</span>
+                      <Badge variant="outline" className="bg-green-50 text-green-700">
+                        Connected
+                      </Badge>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">Address:</span>
+                      <span className="text-xs text-muted-foreground truncate mt-1">
+                        {account}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Network:</span>
+                      <span className="text-sm">
+                        {chainId === 1 ? 'Ethereum Mainnet' : 
+                         chainId === 5 ? 'Goerli Testnet' :
+                         chainId === 11155111 ? 'Sepolia Testnet' :
+                         chainId === 137 ? 'Polygon Mainnet' :
+                         chainId === 80001 ? 'Mumbai Testnet' :
+                         `Chain ID: ${chainId}`}
+                      </span>
+                    </div>
                   </div>
                 ) : (
-                  <span className="text-gray-500">No bridge requests</span>
+                  <div className="flex flex-col items-center justify-center py-2">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Connect your wallet to start
+                    </p>
+                    <Button onClick={connect} size="sm">
+                      Connect Wallet
+                    </Button>
+                  </div>
                 )}
-              </div>
-            </div>
-            
-            <div className="mt-6">
-              <Link
-                to="/bridge"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 w-full justify-center"
-              >
-                Manage Cross-Chain Identity
-              </Link>
-            </div>
+              </CardContent>
+            </Card>
+
+            {/* Identity Status */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <Shield className="mr-2 h-5 w-5" /> Identity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {identity ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Status:</span>
+                      <Badge variant="outline" className="bg-green-50 text-green-700">
+                        Verified
+                      </Badge>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">DID:</span>
+                      <span className="text-xs text-muted-foreground truncate mt-1">
+                        {identity.did}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">Token ID:</span>
+                      <span className="text-xs mt-1">
+                        {identity.tokenId}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-2">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      No identity verified yet
+                    </p>
+                    {isConnected && (
+                      <Button variant="outline" size="sm" className="w-full">
+                        Create Identity
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Chain Identities */}
+            {identity && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center">
+                    <Globe className="mr-2 h-5 w-5" /> Chain Identities
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="px-4 py-2">
+                    {identity.chainIdentities && identity.chainIdentities.length > 0 ? (
+                      <ul className="space-y-2">
+                        {identity.chainIdentities.map((ci, index) => (
+                          <li key={index} className="flex justify-between items-center text-sm">
+                            <div className="flex items-center">
+                              <span>{ci.chainId === 'eth-mainnet' ? 'Ethereum' : 
+                                     ci.chainId === 'polygon-mainnet' ? 'Polygon' :
+                                     ci.chainId === 'solana-mainnet' ? 'Solana' :
+                                     ci.chainId}
+                              </span>
+                            </div>
+                            <Badge 
+                              variant="outline" 
+                              className={ci.isVerified 
+                                ? "bg-green-50 text-green-700" 
+                                : "bg-yellow-50 text-yellow-700"}
+                            >
+                              {ci.isVerified ? 'Verified' : 'Pending'}
+                            </Badge>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground py-2">
+                        No chain identities added yet
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter className="px-4 pt-0 pb-3">
+                  <Button variant="outline" size="sm" className="w-full">
+                    Manage Chain Identities
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
+          </div>
+
+          {/* Main Content */}
+          <div className="md:col-span-9">
+            {!isConnected ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <div className="rounded-full bg-primary/10 p-4 mb-4">
+                    <Wallet className="h-8 w-8 text-primary" />
+                  </div>
+                  <h2 className="text-xl font-semibold mb-2">Connect Your Wallet</h2>
+                  <p className="text-muted-foreground text-center max-w-md mb-6">
+                    Connect your wallet to manage your decentralized identity across multiple blockchains.
+                  </p>
+                  <Button onClick={connect}>Connect Wallet</Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Tabs defaultValue={identity ? "manage" : "create"}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="create">Create Identity</TabsTrigger>
+                  <TabsTrigger value="manage" disabled={!identity}>Manage Identity</TabsTrigger>
+                  <TabsTrigger value="verify" disabled={!identity}>Cross-Chain Verification</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="create" className="pt-4">
+                  <IdentityForm />
+                </TabsContent>
+                
+                <TabsContent value="manage" className="pt-4">
+                  <ChainIdentityManager />
+                </TabsContent>
+                
+                <TabsContent value="verify" className="pt-4">
+                  <VerificationStatus />
+                </TabsContent>
+              </Tabs>
+            )}
           </div>
         </div>
-      )}
-      
-      {/* Getting Started Guide */}
-      {(!currentUser?.did || !currentUser?.verificationStatus || currentUser?.verificationStatus === 'unverified') && (
-        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Getting Started</h2>
-          
-          <div className="space-y-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-600">
-                  1
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-medium">Link your blockchain addresses</h3>
-                <p className="mt-1 text-gray-500">
-                  Connect your Ethereum and Solana wallets to establish your cross-chain identity foundation.
-                </p>
-                {!currentUser?.ethereumAddress && !currentUser?.solanaAddress && (
-                  <Link
-                    to="/identity"
-                    className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                  >
-                    Link Addresses
-                  </Link>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-600">
-                  2
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-medium">Generate your DID</h3>
-                <p className="mt-1 text-gray-500">
-                  Create your Decentralized Identifier (DID) to establish a unified identity across multiple blockchains.
-                </p>
-                {currentUser?.ethereumAddress && !currentUser?.did && (
-                  <Link
-                    to="/identity"
-                    className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                  >
-                    Generate DID
-                  </Link>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-600">
-                  3
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-medium">Complete verification</h3>
-                <p className="mt-1 text-gray-500">
-                  Verify your identity with KYC (for individuals) or KYB (for businesses) to enable full functionality.
-                </p>
-                {currentUser?.did && (!currentUser?.verificationStatus || currentUser?.verificationStatus === 'unverified') && (
-                  <Link
-                    to="/verification"
-                    className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                  >
-                    Start Verification
-                  </Link>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 text-primary-600">
-                  4
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-medium">Bridge your identity</h3>
-                <p className="mt-1 text-gray-500">
-                  Extend your identity to additional blockchains using our cross-chain bridge functionality.
-                </p>
-                {currentUser?.did && currentUser?.verificationStatus === 'verified' && (
-                  <Link
-                    to="/bridge"
-                    className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                  >
-                    Bridge Identity
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
