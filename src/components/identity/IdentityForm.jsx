@@ -1,371 +1,172 @@
 import React, { useState } from 'react';
-import { useWallet } from '../../hooks/useWallet';
-import { useIdentity } from '../../hooks/useIdentity';
-import { useToast } from '../../hooks/useToast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { identityApi } from '../../services/api.service';
+import { connectToPolygonAmoy } from '../../utils/web3';
 
 const IdentityForm = () => {
-  const { account, isConnected, connect } = useWallet();
-  const { verifyIdentity, addChainIdentity, isLoading, error } = useIdentity();
-  const { toast } = useToast();
-
-  // Form state
   const [formData, setFormData] = useState({
-    entityName: '',
-    entityType: 'individual', // individual or organization
     did: '',
-    vcData: {
-      name: '',
-      description: '',
-      attributes: {}
-    },
-    targetChain: '',
-    targetAddress: ''
+    verifiableCredential: JSON.stringify({
+      "@context": ["https://www.w3.org/2018/credentials/v1"],
+      "type": ["VerifiableCredential"],
+      "issuer": "did:example:issuer",
+      "issuanceDate": new Date().toISOString(),
+      "credentialSubject": {
+        "id": "",
+        "name": "",
+        "email": ""
+      }
+    }, null, 2)
   });
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  // Handle input changes
-  const handleInputChange = (e) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // Handle VC data changes
-  const handleVcDataChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      vcData: {
-        ...prev.vcData,
-        [name]: value
-      }
-    }));
-  };
-
-  // Handle entity type selection
-  const handleEntityTypeChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      entityType: value
-    }));
-  };
-
-  // Handle chain selection
-  const handleChainChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      targetChain: value
-    }));
-  };
-
-  // Generate DID based on wallet address
-  const generateDID = () => {
-    if (!account) return;
     
-    const did = `did:ethr:${account}`;
-    setFormData((prev) => ({
-      ...prev,
-      did
-    }));
-  };
-
-  // Submit identity verification
-  const handleVerifyIdentity = async () => {
-    if (!isConnected) {
-      toast({
-        title: "Not connected",
-        description: "Please connect your wallet first",
-        variant: "destructive"
+    if (name === 'verifiableCredential') {
+      try {
+        // Ensure it's valid JSON
+        JSON.parse(value);
+        setFormData({ ...formData, [name]: value });
+      } catch (err) {
+        // Allow incomplete JSON during typing
+        setFormData({ ...formData, [name]: value });
+      }
+    } else if (name === 'name' || name === 'email') {
+      // Update nested fields in verifiableCredential
+      const vc = JSON.parse(formData.verifiableCredential);
+      vc.credentialSubject[name] = value;
+      setFormData({
+        ...formData,
+        verifiableCredential: JSON.stringify(vc, null, 2)
       });
-      return;
-    }
-
-    try {
-      // Prepare VC as JSON string
-      const vc = JSON.stringify({
-        ...formData.vcData,
-        type: formData.entityType,
-        issuanceDate: new Date().toISOString()
-      });
-
-      // Call verify identity function
-      const result = await verifyIdentity({
-        entityAddress: account,
-        did: formData.did,
-        vc
-      });
-
-      if (result.success) {
-        toast({
-          title: "Identity verified successfully",
-          description: `Token ID: ${result.tokenId}`,
-          variant: "default"
+    } else {
+      // Update DID in both formData and within VC
+      setFormData({ ...formData, [name]: value });
+      if (name === 'did') {
+        const vc = JSON.parse(formData.verifiableCredential);
+        vc.credentialSubject.id = value;
+        setFormData({
+          ...formData,
+          verifiableCredential: JSON.stringify(vc, null, 2),
+          did: value
         });
       }
-    } catch (err) {
-      toast({
-        title: "Verification failed",
-        description: err.message,
-        variant: "destructive"
-      });
     }
   };
 
-  // Submit chain identity
-  const handleAddChainIdentity = async () => {
-    if (!isConnected) {
-      toast({
-        title: "Not connected",
-        description: "Please connect your wallet first",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
 
     try {
-      // Get token ID from storage (in a real app, this would be retrieved from state or API)
-      const tokenId = localStorage.getItem('tokenId');
+      // Connect to wallet
+      const { address, soulboundContract } = await connectToPolygonAmoy();
       
-      if (!tokenId) {
-        toast({
-          title: "Token ID not found",
-          description: "Please verify your identity first",
-          variant: "destructive"
-        });
-        return;
+      // Validate form data
+      if (!formData.did.startsWith('did:')) {
+        throw new Error('DID must start with "did:"');
       }
-
-      // Call add chain identity function
-      const result = await addChainIdentity({
-        tokenId,
-        chainId: formData.targetChain,
-        chainAddress: formData.targetAddress
+      
+      // Try to parse VC to ensure it's valid JSON
+      const vc = JSON.parse(formData.verifiableCredential);
+      
+      // Register identity through API
+      const response = await identityApi.register({
+        address,
+        did: formData.did,
+        verifiableCredential: formData.verifiableCredential
       });
-
-      if (result.success) {
-        toast({
-          title: "Chain identity added successfully",
-          description: `Chain: ${result.chainId}`,
-          variant: "default"
-        });
-      }
+      
+      setSuccess('Identity registered successfully! Please wait for verification.');
+      
+      // Reset form
+      setFormData({
+        did: '',
+        verifiableCredential: JSON.stringify({
+          "@context": ["https://www.w3.org/2018/credentials/v1"],
+          "type": ["VerifiableCredential"],
+          "issuer": "did:example:issuer",
+          "issuanceDate": new Date().toISOString(),
+          "credentialSubject": {
+            "id": "",
+            "name": "",
+            "email": ""
+          }
+        }, null, 2)
+      });
     } catch (err) {
-      toast({
-        title: "Failed to add chain identity",
-        description: err.message,
-        variant: "destructive"
-      });
+      console.error('Error registering identity:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle>Identity Management</CardTitle>
-        <CardDescription>
-          Verify your identity and manage cross-chain identities
-        </CardDescription>
-      </CardHeader>
+    <div className="identity-form">
+      <h2>Register New Identity</h2>
       
-      <CardContent>
-        <Tabs defaultValue="verify">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="verify">Verify Identity</TabsTrigger>
-            <TabsTrigger value="chain">Add Chain Identity</TabsTrigger>
-          </TabsList>
-          
-          {/* Verify Identity Tab */}
-          <TabsContent value="verify">
-            <div className="space-y-4 mt-4">
-              {/* Wallet Connection Status */}
-              {!isConnected ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Not Connected</AlertTitle>
-                  <AlertDescription>
-                    Please connect your wallet to verify your identity.
-                  </AlertDescription>
-                  <Button onClick={connect} className="mt-2">Connect Wallet</Button>
-                </Alert>
-              ) : (
-                <Alert>
-                  <CheckCircle2 className="h-4 w-4" />
-                  <AlertTitle>Connected</AlertTitle>
-                  <AlertDescription>
-                    Wallet address: {account}
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {/* Entity Type */}
-              <div className="space-y-2">
-                <Label htmlFor="entityType">Entity Type</Label>
-                <Select 
-                  value={formData.entityType}
-                  onValueChange={handleEntityTypeChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select entity type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="individual">Individual</SelectItem>
-                    <SelectItem value="organization">Organization</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Entity Name */}
-              <div className="space-y-2">
-                <Label htmlFor="entityName">Entity Name</Label>
-                <Input
-                  id="entityName"
-                  name="entityName"
-                  value={formData.entityName}
-                  onChange={handleInputChange}
-                  placeholder="Enter entity name"
-                />
-              </div>
-              
-              {/* DID */}
-              <div className="space-y-2">
-                <Label htmlFor="did">Decentralized Identifier (DID)</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="did"
-                    name="did"
-                    value={formData.did}
-                    onChange={handleInputChange}
-                    placeholder="did:ethr:0x..."
-                    className="flex-1"
-                  />
-                  <Button 
-                    variant="outline" 
-                    onClick={generateDID}
-                    disabled={!isConnected}
-                  >
-                    Generate
-                  </Button>
-                </div>
-              </div>
-              
-              {/* VC Data */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.vcData.name}
-                  onChange={handleVcDataChange}
-                  placeholder="Enter name for VC"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={formData.vcData.description}
-                  onChange={handleVcDataChange}
-                  placeholder="Enter description for VC"
-                  rows={3}
-                />
-              </div>
-            </div>
-          </TabsContent>
-          
-          {/* Add Chain Identity Tab */}
-          <TabsContent value="chain">
-            <div className="space-y-4 mt-4">
-              {/* Wallet Connection Status */}
-              {!isConnected && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Not Connected</AlertTitle>
-                  <AlertDescription>
-                    Please connect your wallet to add chain identity.
-                  </AlertDescription>
-                  <Button onClick={connect} className="mt-2">Connect Wallet</Button>
-                </Alert>
-              )}
-              
-              {/* Target Chain */}
-              <div className="space-y-2">
-                <Label htmlFor="targetChain">Target Chain</Label>
-                <Select 
-                  value={formData.targetChain}
-                  onValueChange={handleChainChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select target chain" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="eth-mainnet">Ethereum Mainnet</SelectItem>
-                    <SelectItem value="polygon-mainnet">Polygon Mainnet</SelectItem>
-                    <SelectItem value="solana-mainnet">Solana Mainnet</SelectItem>
-                    <SelectItem value="eth-goerli">Ethereum Goerli</SelectItem>
-                    <SelectItem value="polygon-mumbai">Polygon Mumbai</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Target Address */}
-              <div className="space-y-2">
-                <Label htmlFor="targetAddress">Target Address</Label>
-                <Input
-                  id="targetAddress"
-                  name="targetAddress"
-                  value={formData.targetAddress}
-                  onChange={handleInputChange}
-                  placeholder="Enter address on target chain"
-                />
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="did">Decentralized Identifier (DID)</label>
+          <input
+            type="text"
+            id="did"
+            name="did"
+            value={formData.did}
+            onChange={handleChange}
+            placeholder="did:example:123456789"
+            required
+          />
+        </div>
         
-        {/* Display error if any */}
-        {error && (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-      </CardContent>
+        <div className="form-group">
+          <label htmlFor="name">Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            onChange={handleChange}
+            placeholder="Your Name"
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            onChange={handleChange}
+            placeholder="your@email.com"
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="verifiableCredential">Verifiable Credential (JSON)</label>
+          <textarea
+            id="verifiableCredential"
+            name="verifiableCredential"
+            value={formData.verifiableCredential}
+            onChange={handleChange}
+            rows={12}
+            required
+          />
+        </div>
+        
+        <button type="submit" className="submit-button" disabled={loading}>
+          {loading ? 'Registering...' : 'Register Identity'}
+        </button>
+      </form>
       
-      <CardFooter className="flex justify-end">
-        <Tabs.Consumer>
-          {({ value }) => (
-            value === "verify" ? (
-              <Button 
-                onClick={handleVerifyIdentity} 
-                disabled={isLoading || !isConnected}
-              >
-                {isLoading ? "Verifying..." : "Verify Identity"}
-              </Button>
-            ) : (
-              <Button 
-                onClick={handleAddChainIdentity} 
-                disabled={isLoading || !isConnected}
-              >
-                {isLoading ? "Adding..." : "Add Chain Identity"}
-              </Button>
-            )
-          )}
-        </Tabs.Consumer>
-      </CardFooter>
-    </Card>
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
+    </div>
   );
 };
 

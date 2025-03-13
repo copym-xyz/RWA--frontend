@@ -11,12 +11,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center">
-              <img
+              {/* <img
                 className="h-8 w-auto"
                 src="/images/logo.svg"
                 alt={APP_SETTINGS.appName}
                 onError={(e) => { e.target.src = '/images/placeholder-logo.svg' }}
-              />
+              /> */}
               <span className="ml-2 text-lg font-bold text-gray-900">{APP_SETTINGS.appName}</span>
             </div>
             <p className="mt-4 text-sm text-gray-500 max-w-md">

@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
-import { apiService } from './api.service';
+// In identity.service.js, line 2
+import { apiClient as apiService } from './api.service';
 import SoulboundNFTAbi from '../utils/abis/SoulboundNFT.json';
 import CrossChainBridgeAbi from '../utils/abis/CrossChainBridge.json';
 

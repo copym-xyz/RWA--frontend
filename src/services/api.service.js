@@ -1,140 +1,71 @@
 import axios from 'axios';
 
-/**
- * Service for API communications
- */
-class ApiService {
-  constructor() {
-    // Get API URL from environment
-    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-    
-    // Create axios instance
-    this.axiosInstance = axios.create({
-      baseURL: this.baseURL,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    // Add request interceptor for authentication
-    this.axiosInstance.interceptors.request.use(
-      (config) => {
-        // Get token from localStorage if available
-        const token = localStorage.getItem('auth_token');
-        
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
-    
-    // Add response interceptor for error handling
-    this.axiosInstance.interceptors.response.use(
-      (response) => response.data,
-      (error) => {
-        // Handle error responses
-        const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
-        
-        // If unauthorized (401), clear token
-        if (error.response?.status === 401) {
-          localStorage.removeItem('auth_token');
-        }
-        
-        return Promise.reject(new Error(errorMessage));
-      }
-    );
-  }
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-  /**
-   * Make a GET request
-   * @param {string} url - API endpoint
-   * @param {Object} params - Query parameters
-   * @returns {Promise<any>} Response data
-   */
-  async get(url, params = {}) {
-    try {
-      return await this.axiosInstance.get(url, { params });
-    } catch (error) {
-      console.error(`GET ${url} failed:`, error);
-      throw error;
+// Create axios instance
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor for JWT token
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
+);
 
-  /**
-   * Make a POST request
-   * @param {string} url - API endpoint
-   * @param {Object} data - Request payload
-   * @returns {Promise<any>} Response data
-   */
-  async post(url, data = {}) {
-    try {
-      return await this.axiosInstance.post(url, data);
-    } catch (error) {
-      console.error(`POST ${url} failed:`, error);
-      throw error;
-    }
-  }
+// Identity API calls
+const identityApi = {
+  register: (data) => apiClient.post('/identity/register', data),
+  update: (data) => apiClient.post('/identity/update', data),
+  addChainIdentity: (data) => apiClient.post('/identity/chain', data),
+  getByDID: (did) => apiClient.get(`/identity/did/${did}`),
+  getByTokenId: (tokenId) => apiClient.get(`/identity/token/${tokenId}`),
+  getChainIdentities: (tokenId) => apiClient.get(`/identity/chain/${tokenId}`),
+  verifyChainAddress: (data) => apiClient.post('/identity/verify-chain', data),
+};
 
-  /**
-   * Make a PUT request
-   * @param {string} url - API endpoint
-   * @param {Object} data - Request payload
-   * @returns {Promise<any>} Response data
-   */
-  async put(url, data = {}) {
-    try {
-      return await this.axiosInstance.put(url, data);
-    } catch (error) {
-      console.error(`PUT ${url} failed:`, error);
-      throw error;
-    }
-  }
+// Verification API calls
+const verificationApi = {
+  request: (data) => apiClient.post('/verification/request', data),
+  getById: (requestId) => apiClient.get(`/verification/request/${requestId}`),
+  getByDID: (did) => apiClient.get(`/verification/did/${did}`),
+  updateStatus: (requestId, data) => apiClient.put(`/verification/status/${requestId}`, data),
+  complete: (requestId, data) => apiClient.post(`/verification/complete/${requestId}`, data),
+  getPending: () => apiClient.get('/verification/pending'),
+};
 
-  /**
-   * Make a DELETE request
-   * @param {string} url - API endpoint
-   * @param {Object} params - Query parameters
-   * @returns {Promise<any>} Response data
-   */
-  async delete(url, params = {}) {
-    try {
-      return await this.axiosInstance.delete(url, { params });
-    } catch (error) {
-      console.error(`DELETE ${url} failed:`, error);
-      throw error;
-    }
-  }
+// Bridge API calls
+const bridgeApi = {
+  sendMessage: (data) => apiClient.post('/bridge/message', data),
+  getById: (messageId) => apiClient.get(`/bridge/message/${messageId}`),
+  getByChains: (sourceChain, targetChain) => apiClient.get(`/bridge/chains/${sourceChain}/${targetChain}`),
+  updateStatus: (messageId, data) => apiClient.put(`/bridge/status/${messageId}`, data),
+  getPendingMessages: (targetChain) => apiClient.get(`/bridge/pending/${targetChain}`),
+};
 
-  /**
-   * Upload a file
-   * @param {string} url - API endpoint
-   * @param {File} file - File to upload
-   * @param {Object} additionalData - Additional form data
-   * @returns {Promise<any>} Response data
-   */
-  async uploadFile(url, file, additionalData = {}) {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Add any additional data
-      Object.entries(additionalData).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-      
-      return await this.axiosInstance.post(url, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-    } catch (error) {
-      console.error(`File upload to ${url} failed:`, error);
-      throw error;
-    }
-  }
-}
+// Authentication API calls
+const authApi = {
+  login: (credentials) => apiClient.post('/auth/login', credentials),
+  register: (userData) => apiClient.post('/auth/register', userData),
+  getProfile: () => apiClient.get('/auth/profile'),
+};
 
-export const apiService = new ApiService();
+export {
+  apiClient,
+  identityApi,
+  verificationApi,
+  bridgeApi,
+  authApi,
+};
+

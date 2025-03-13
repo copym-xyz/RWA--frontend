@@ -1,7 +1,7 @@
 // Application configuration
 
 // API base URL
-export const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+export const API_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:4000';
 
 // Supported blockchains
 export const SUPPORTED_BLOCKCHAINS = ['ethereum', 'solana', 'polygon'];
