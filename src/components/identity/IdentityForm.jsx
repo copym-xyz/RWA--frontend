@@ -147,7 +147,7 @@ const IdentityForm = () => {
           />
         </div>
         
-        <div className="form-group">
+        {/* <div className="form-group">
           <label htmlFor="verifiableCredential">Verifiable Credential (JSON)</label>
           <textarea
             id="verifiableCredential"
@@ -157,7 +157,7 @@ const IdentityForm = () => {
             rows={12}
             required
           />
-        </div>
+        </div> */}
         
         <button type="submit" className="submit-button" disabled={loading}>
           {loading ? 'Registering...' : 'Register Identity'}
