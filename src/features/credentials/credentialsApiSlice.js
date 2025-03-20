@@ -1,7 +1,16 @@
+// features/credentials/credentialsApiSlice.js
 import { apiSlice } from '../../app/api';
 
 export const credentialsApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    getCredentialsForSubject: builder.query({
+      query: (did) => `/credential/subject/${did}`,
+      providesTags: ['Credential'],
+    }),
+    getCredential: builder.query({
+      query: (credentialHash) => `/credential/${credentialHash}`,
+      providesTags: (result, error, id) => [{ type: 'Credential', id }],
+    }),
     issueCredential: builder.mutation({
       query: (data) => ({
         url: '/credential/issue',
@@ -25,34 +34,13 @@ export const credentialsApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Credential'],
     }),
-    getCredential: builder.query({
-      query: (credentialHash) => `/credential/${credentialHash}`,
-      providesTags: (result, error, hash) => [{ type: 'Credential', id: hash }],
-    }),
-    getCredentialsForSubject: builder.query({
-      query: (did) => `/credential/subject/${did}`,
-      providesTags: ['Credential'],
-    }),
-    getCredentialsBySBT: builder.query({
-      query: (tokenId) => `/credential/sbt/${tokenId}`,
-      providesTags: ['Credential'],
-    }),
-    verifyCrossChain: builder.mutation({
-      query: (data) => ({
-        url: '/credential/verify-cross-chain',
-        method: 'POST',
-        body: data,
-      }),
-    }),
   }),
 });
 
 export const {
+  useGetCredentialsForSubjectQuery,
+  useGetCredentialQuery,
   useIssueCredentialMutation,
   useVerifyCredentialMutation,
   useRevokeCredentialMutation,
-  useGetCredentialQuery,
-  useGetCredentialsForSubjectQuery,
-  useGetCredentialsBySBTQuery,
-  useVerifyCrossChainMutation,
 } = credentialsApiSlice;

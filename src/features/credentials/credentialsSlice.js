@@ -1,8 +1,11 @@
+// features/credentials/credentialsSlice.js
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   credentials: [],
   selectedCredential: null,
+  loading: false,
+  error: null,
 };
 
 export const credentialsSlice = createSlice({
@@ -12,32 +15,28 @@ export const credentialsSlice = createSlice({
     setCredentials: (state, action) => {
       state.credentials = action.payload;
     },
-    addCredential: (state, action) => {
-      state.credentials.push(action.payload);
-    },
-    updateCredential: (state, action) => {
-      const { credentialHash, updates } = action.payload;
-      const index = state.credentials.findIndex(c => c.credential_hash === credentialHash);
-      if (index !== -1) {
-        state.credentials[index] = { ...state.credentials[index], ...updates };
-      }
-    },
-    selectCredential: (state, action) => {
+    setSelectedCredential: (state, action) => {
       state.selectedCredential = action.payload;
     },
     clearCredentials: (state) => {
       state.credentials = [];
       state.selectedCredential = null;
     },
+    setLoading: (state, action) => {
+      state.loading = action.payload;
+    },
+    setError: (state, action) => {
+      state.error = action.payload;
+    },
   },
 });
 
 export const { 
   setCredentials, 
-  addCredential, 
-  updateCredential, 
-  selectCredential,
-  clearCredentials
+  setSelectedCredential, 
+  clearCredentials,
+  setLoading,
+  setError
 } = credentialsSlice.actions;
 
 export default credentialsSlice.reducer;

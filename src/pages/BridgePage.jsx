@@ -226,7 +226,7 @@ const BridgePage = () => {
           <select
             value={sourceChain}
             onChange={handleSourceChainChange}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200"
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
             disabled
           >
             {availableChains.map(chain => (
@@ -241,7 +241,7 @@ const BridgePage = () => {
           <select
             value={targetChain}
             onChange={handleTargetChainChange}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200"
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
           >
             {availableChains.filter(chain => chain.id !== sourceChain).map(chain => (
               <option key={chain.id} value={chain.id}>{chain.name}</option>
@@ -268,11 +268,11 @@ const BridgePage = () => {
         onClick={handleVerifyIdentity}
         disabled={isVerifying || !did}
         className={`w-full py-3 rounded-md ${
-          !did 
-            ? 'bg-gray-300 cursor-not-allowed' 
-            : isVerifying 
-              ? 'bg-primary-400 cursor-not-allowed' 
-              : 'bg-primary-600 hover:bg-primary-700'
+          !did
+            ? 'bg-gray-300 cursor-not-allowed'
+            : isVerifying
+              ? 'bg-blue-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700'
         } text-white font-semibold`}
       >
         {isVerifying ? 'Verifying...' : 'Verify Identity'}
@@ -302,7 +302,7 @@ const BridgePage = () => {
               onClick={() => handleTokenSelect(token)}
               className={`p-4 border rounded-lg cursor-pointer transition-all ${
                 selectedToken?.symbol === token.symbol
-                  ? 'border-primary-500 bg-primary-50'
+                  ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-400'
               }`}
             >
@@ -326,7 +326,7 @@ const BridgePage = () => {
             <label className="block text-sm font-medium text-gray-700">Amount</label>
             <button
               onClick={handleMaxAmount}
-              className="text-xs text-primary-600 hover:text-primary-700"
+              className="text-xs text-blue-600 hover:text-blue-700"
             >
               Max: {tokenBalance} {selectedToken.symbol}
             </button>
@@ -336,7 +336,7 @@ const BridgePage = () => {
               type="number"
               value={amount}
               onChange={handleAmountChange}
-              className="flex-1 rounded-l-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200"
+              className="flex-1 rounded-l-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
               placeholder="0.0"
               min="0"
               step="0.1"
@@ -364,8 +364,8 @@ const BridgePage = () => {
             !selectedToken || !amount || parseFloat(amount) <= 0
               ? 'bg-gray-300 cursor-not-allowed'
               : isBridging
-                ? 'bg-primary-400 cursor-not-allowed'
-                : 'bg-primary-600 hover:bg-primary-700'
+                ? 'bg-blue-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700'
           } text-white font-semibold`}
         >
           {isBridging ? 'Processing...' : 'Bridge Tokens'}
@@ -423,12 +423,12 @@ const BridgePage = () => {
         <button
           onClick={() => {
             setStep(1);
-            setSelectedToken(null);
-            setAmount('0');
+            dispatch(setSelectedToken(null));
+            dispatch(setAmount('0'));
             setTransferId(null);
             setSuccess('');
           }}
-          className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-md"
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md"
         >
           Start New Bridge
         </button>
@@ -444,31 +444,31 @@ const BridgePage = () => {
         {/* Progress Stepper */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
-            <div className={`flex flex-col items-center ${step >= 1 ? 'text-primary-600' : 'text-gray-400'}`}>
+            <div className={`flex flex-col items-center ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
               <div className={`w-8 h-8 flex items-center justify-center rounded-full ${
-                step >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-400'
+                step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'
               }`}>
                 1
               </div>
               <span className="text-xs mt-1">Verify</span>
             </div>
             
-            <div className={`flex-1 h-1 mx-2 ${step >= 2 ? 'bg-primary-600' : 'bg-gray-200'}`}></div>
+            <div className={`flex-1 h-1 mx-2 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
             
-            <div className={`flex flex-col items-center ${step >= 2 ? 'text-primary-600' : 'text-gray-400'}`}>
+            <div className={`flex flex-col items-center ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
               <div className={`w-8 h-8 flex items-center justify-center rounded-full ${
-                step >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-400'
+                step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'
               }`}>
                 2
               </div>
               <span className="text-xs mt-1">Select</span>
             </div>
             
-            <div className={`flex-1 h-1 mx-2 ${step >= 3 ? 'bg-primary-600' : 'bg-gray-200'}`}></div>
+            <div className={`flex-1 h-1 mx-2 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
             
-            <div className={`flex flex-col items-center ${step >= 3 ? 'text-primary-600' : 'text-gray-400'}`}>
+            <div className={`flex flex-col items-center ${step >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
               <div className={`w-8 h-8 flex items-center justify-center rounded-full ${
-                step >= 3 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-400'
+                step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'
               }`}>
                 3
               </div>
@@ -508,7 +508,7 @@ const BridgePage = () => {
                   <th className="px-6 py-3">Amount</th>
                   <th className="px-6 py-3">Status</th>
                   <th className="px-6 py-3">Time</th>
-                </tr>
+                  </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {pendingTransactions.map((tx) => (

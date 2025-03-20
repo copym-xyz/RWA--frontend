@@ -46,8 +46,8 @@ export const bridgeSlice = createSlice({
   },
 });
 
-export const { 
-  setTargetChain, 
+export const {
+  setTargetChain,
   setSourceChain,
   setSelectedToken,
   setAmount,

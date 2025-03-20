@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useGetCredentialsForSubjectQuery } from '../features/credentials/credentialsApiSlice';
@@ -13,7 +13,7 @@ const CredentialCard = ({ credential }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition-shadow">
+    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
       <div className="flex justify-between items-start mb-3">
         <h3 className="font-bold">{credential.credential_type || 'Verifiable Credential'}</h3>
         <span className={`px-2 py-1 rounded-full text-xs ${statusColors[credential.status] || 'bg-gray-100'}`}>
@@ -31,7 +31,7 @@ const CredentialCard = ({ credential }) => {
       
       <Link
         to={`/credentials/${credential.credential_hash}`}
-        className="block text-center bg-primary-50 text-primary-600 px-4 py-2 rounded hover:bg-primary-100 transition-colors"
+        className="block text-center bg-blue-50 text-blue-600 px-4 py-2 rounded hover:bg-blue-100 transition-colors"
       >
         View Details
       </Link>
@@ -62,8 +62,8 @@ const CredentialsPage = () => {
     ...new Set(credentials.map(cred => cred.credential_type || 'Verifiable Credential'))
   ];
   
-  const [selectedType, setSelectedType] = React.useState('All');
-  const [statusFilter, setStatusFilter] = React.useState('All');
+  const [selectedType, setSelectedType] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
   
   // Filter credentials based on selected type and status
   const filteredCredentials = credentials.filter(cred => {
@@ -76,7 +76,7 @@ const CredentialsPage = () => {
     return (
       <div className="container mx-auto p-4">
         <div className="bg-white rounded-lg shadow-lg p-6 flex items-center justify-center min-h-[300px]">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
         </div>
       </div>
     );
@@ -106,7 +106,7 @@ const CredentialsPage = () => {
           <div className="flex justify-center">
             <Link
               to="/identity/create"
-              className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700"
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
             >
               Create Identity
             </Link>
@@ -128,7 +128,7 @@ const CredentialsPage = () => {
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200"
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
             >
               {credentialTypes.map(type => (
                 <option key={type} value={type}>{type}</option>
@@ -141,7 +141,7 @@ const CredentialsPage = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200"
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
             >
               <option value="All">All</option>
               <option value="ACTIVE">Active</option>
@@ -177,7 +177,7 @@ const CredentialsPage = () => {
             </p>
             <Link
               to="/kyc"
-              className="inline-block bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700"
+              className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
             >
               Complete KYC Verification
             </Link>

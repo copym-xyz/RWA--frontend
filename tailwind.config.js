@@ -13,6 +13,10 @@ export default {
 			500: '#6366f1',
 			600: '#4f46e5',
 			700: '#4338ca',
+			200: '#e0f2fe', // Example light primary color (adjust to your needs)
+          500: '#3b82f6', // Example mid primary color
+          600: '#2563eb', // Example for btn-primary
+          700: '#1d4ed8', // Example for hover
 		  },
 		  secondary: {
 			500: '#10b981',

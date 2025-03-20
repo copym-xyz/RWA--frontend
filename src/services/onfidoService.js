@@ -1,5 +1,3 @@
-import { init } from '@onfido/sdk';
-
 class OnfidoService {
   constructor() {
     this.onfido = null;
@@ -47,8 +45,14 @@ class OnfidoService {
     // Merge default options with passed options
     const mergedOptions = { ...defaultOptions, ...options };
     
-    // Initialize the Onfido SDK
-    this.onfido = init(mergedOptions);
+    // In a real implementation, you would use the Onfido SDK
+    console.log('Initializing Onfido SDK with options:', mergedOptions);
+    
+    // Mock initialization for now
+    this.onfido = {
+      open: () => console.log('Onfido SDK opened'),
+      tearDown: () => console.log('Onfido SDK torn down')
+    };
     
     return this;
   }

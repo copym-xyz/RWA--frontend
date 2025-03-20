@@ -1,42 +1,36 @@
+// features/bridge/bridgeApiSlice.js
 import { apiSlice } from '../../app/api';
 
 export const bridgeApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     requestVerification: builder.mutation({
       query: (data) => ({
-        url: '/identity/admin/resolve-did',
+        url: '/admin/cross-chain/verification',
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Bridge'],
-    }),
-    getVerificationStatus: builder.query({
-      query: (requestId) => `/admin/verification/${requestId}`,
-      providesTags: (result, error, id) => [{ type: 'Bridge', id }],
     }),
     bridgeTokens: builder.mutation({
       query: (data) => ({
-        url: '/bridge/tokens',
+        url: '/admin/cross-chain/bridge-tokens',
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Bridge'],
     }),
     getTokenTransferStatus: builder.query({
-      query: (transferId) => `/bridge/transfer/${transferId}`,
+      query: (transferId) => `/admin/cross-chain/transfers/${transferId}`,
       providesTags: (result, error, id) => [{ type: 'Bridge', id }],
     }),
-    getBridgeEndpoints: builder.query({
-      query: () => '/admin/bridge/endpoints',
-      providesTags: ['Bridge'],
+    getVerificationStatus: builder.query({
+      query: (requestId) => `/admin/cross-chain/verifications/${requestId}`,
+      providesTags: (result, error, id) => [{ type: 'Bridge', id }],
     }),
   }),
 });
 
 export const {
   useRequestVerificationMutation,
-  useGetVerificationStatusQuery,
   useBridgeTokensMutation,
   useGetTokenTransferStatusQuery,
-  useGetBridgeEndpointsQuery,
+  useGetVerificationStatusQuery,
 } = bridgeApiSlice;

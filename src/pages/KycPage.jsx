@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useGetUserVerificationsQuery, useGenerateProofMutation } from '../features/kyc/kycApiSlice';
@@ -54,7 +54,7 @@ const KycPage = () => {
     return (
       <div className="container mx-auto p-4">
         <div className="bg-white rounded-lg shadow-lg p-6 flex items-center justify-center min-h-[300px]">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
         </div>
       </div>
     );
@@ -108,17 +108,17 @@ const KycPage = () => {
                     onClick={handleGenerateProof}
                     disabled={isGeneratingProof || !!proofId}
                     className={`px-4 py-2 rounded-md ${
-                      proofId 
-                        ? 'bg-green-100 text-green-800 cursor-not-allowed' 
-                        : isGeneratingProof 
-                          ? 'bg-gray-300 cursor-not-allowed' 
-                          : 'bg-primary-600 text-white hover:bg-primary-700'
+                      proofId
+                        ? 'bg-green-100 text-green-800 cursor-not-allowed'
+                        : isGeneratingProof
+                          ? 'bg-gray-300 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                   >
-                    {proofId 
-                      ? 'Proof Generated' 
-                      : isGeneratingProof 
-                        ? 'Generating...' 
+                    {proofId
+                      ? 'Proof Generated'
+                      : isGeneratingProof
+                        ? 'Generating...'
                         : 'Generate ZK Proof'}
                   </button>
                   
@@ -144,7 +144,7 @@ const KycPage = () => {
                   </p>
                   <button
                     onClick={() => startVerification(level || 'BASIC')}
-                    className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
                   >
                     Try Again
                   </button>
@@ -163,34 +163,34 @@ const KycPage = () => {
           <div>
             <h2 className="text-xl font-semibold mb-4">Choose Verification Level</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:shadow-md transition-all">
+              <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all">
                 <h3 className="font-bold mb-2">Basic Verification</h3>
                 <p className="text-sm text-gray-600 mb-4">Simple ID verification for basic access.</p>
                 <button
                   onClick={() => startVerification('BASIC')}
-                  className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 w-full"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 w-full"
                 >
                   Start Basic Verification
                 </button>
               </div>
               
-              <div className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:shadow-md transition-all">
+              <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all">
                 <h3 className="font-bold mb-2">Advanced Verification</h3>
                 <p className="text-sm text-gray-600 mb-4">Comprehensive ID verification for full access.</p>
                 <button
                   onClick={() => startVerification('ADVANCED')}
-                  className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 w-full"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 w-full"
                 >
                   Start Advanced Verification
                 </button>
               </div>
               
-              <div className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:shadow-md transition-all">
+              <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all">
                 <h3 className="font-bold mb-2">Business Verification</h3>
                 <p className="text-sm text-gray-600 mb-4">Business entity verification for institutional access.</p>
                 <button
                   onClick={() => startVerification('BUSINESS')}
-                  className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 w-full"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 w-full"
                 >
                   Start Business Verification
                 </button>
@@ -221,10 +221,10 @@ const KycPage = () => {
                       <td className="py-3 px-4">{verification.provider}</td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs ${
-                          verification.status === 'APPROVED' || verification.status === 'VERIFIED' 
-                            ? 'bg-green-100 text-green-800' 
-                            : verification.status === 'PENDING' || verification.status === 'IN_PROGRESS' 
-                              ? 'bg-yellow-100 text-yellow-800' 
+                          verification.status === 'APPROVED' || verification.status === 'VERIFIED'
+                            ? 'bg-green-100 text-green-800'
+                            : verification.status === 'PENDING' || verification.status === 'IN_PROGRESS'
+                              ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-red-100 text-red-800'
                         }`}>
                           {verification.status}

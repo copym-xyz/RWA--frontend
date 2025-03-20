@@ -16,7 +16,7 @@ const RequireAuth = () => {
   
   if (!isAuthenticated) {
     // Redirect to the login page with a return URL
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
   
   return <Outlet />;

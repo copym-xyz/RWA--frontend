@@ -3,7 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   user: null,
   token: localStorage.getItem('token'),
-  isAuthenticated: false,
+  isAuthenticated: !!localStorage.getItem('token'),
   loading: false,
   error: null,
   walletAddress: null,
@@ -44,10 +44,10 @@ export const authSlice = createSlice({
   },
 });
 
-export const { 
-  setCredentials, 
-  logOut, 
-  setWalletAddress, 
+export const {
+  setCredentials,
+  logOut,
+  setWalletAddress,
   setChainId,
   setLoading,
   setError
