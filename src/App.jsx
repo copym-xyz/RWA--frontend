@@ -12,32 +12,33 @@ import KycPage from './pages/KycPage';
 import OnfidoVerificationPage from './pages/OnfidoVerificationPage';
 import BridgePage from './pages/BridgePage';
 import store from './app/store';
-
-
+import './styles/dark-theme.css';  // Import dark theme
 
 function App() {
   return (
     <Provider store={store}>
       <Router>
-        <Routes>
-          <Route path="/" element={<AppLayout />}>
-            <Route index element={<WalletConnectPage />} />
-            
-            {/* Protected routes */}
-            <Route element={<RequireAuth />}>
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="identity/create" element={<CreateIdentityPage />} />
-              <Route path="credentials" element={<CredentialsPage />} />
-              <Route path="credentials/:credentialHash" element={<CredentialDetailPage />} />
-              <Route path="kyc" element={<KycPage />} />
-              <Route path="kyc/verify" element={<OnfidoVerificationPage />} />
-              <Route path="bridge" element={<BridgePage />} />
+        <div className="min-h-screen bg-[var(--background-primary)] text-[var(--text-primary)]">
+          <Routes>
+            <Route path="/" element={<AppLayout />}>
+              <Route index element={<WalletConnectPage />} />
+              
+              {/* Protected routes */}
+              <Route element={<RequireAuth />}>
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="identity/create" element={<CreateIdentityPage />} />
+                <Route path="credentials" element={<CredentialsPage />} />
+                <Route path="credentials/:credentialHash" element={<CredentialDetailPage />} />
+                <Route path="kyc" element={<KycPage />} />
+                <Route path="kyc/verify" element={<OnfidoVerificationPage />} />
+                <Route path="bridge" element={<BridgePage />} />
+              </Route>
+              
+              {/* Catch all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
-            
-            {/* Catch all */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
+          </Routes>
+        </div>
       </Router>
     </Provider>
   );

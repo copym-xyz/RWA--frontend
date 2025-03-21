@@ -106,7 +106,7 @@ const WalletConnect = () => {
     return (
         <button
             onClick={connectWallet}
-            className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 flex items-center justify-center w-full md:w-auto"
+            className="dark-button flex items-center justify-center w-full px-6 py-3"
         >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1.5l-1.8-1.8A2 2 0 0010.9 2H9.1a2 2 0 00-1.7.8L5.5 4H4zm7 5a1 1 0 10-2 0v.5H8a1 1 0 100 2h1v.5a1 1 0 102 0v-.5h1a1 1 0 100-2h-1V9z" />

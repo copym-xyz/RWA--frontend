@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logOut } from '../../features/auth/authSlice';
@@ -12,12 +12,13 @@ const Navbar = () => {
   const { user } = useSelector(state => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [logout] = useLogoutMutation();
+  const [logoutMutation] = useLogoutMutation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
-      await logout().unwrap();
-      dispatch(logOut());
+      await logoutMutation().unwrap();
+      dispatch(logout());
       dispatch(clearIdentity());
       dispatch(clearCredentials());
       dispatch(clearKyc());
@@ -29,41 +30,55 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-blue-600 fixed top-0 left-0 right-0 h-16 z-10 shadow-md">
-      <div className="h-full px-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Link to="/dashboard" className="text-white text-xl font-bold">
-            Identity Bridge
+    <nav className="px-6 py-4 border-b border-[var(--border-color)] relative">
+      <div className="container mx-auto flex items-center justify-between">
+        {/* Logo/Brand */}
+        <Link to="/dashboard" className="text-[var(--text-primary)] text-xl font-bold flex items-center">
+          <div className="w-8 h-8 mr-3 rounded-full bg-[var(--accent-primary)] flex items-center justify-center text-black font-bold">
+            M
+          </div>
+          <span>Copy<span className="text-[var(--accent-primary)]">m</span></span>
+        </Link>
+
+        {/* Navigation Links */}
+        <div className="hidden md:flex items-center space-x-8">
+          <Link 
+            to="/dashboard" 
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            Dashboard
           </Link>
-          
-          <div className="hidden md:flex space-x-4">
-            <Link to="/dashboard" className="text-white hover:text-gray-200">
-              Dashboard
-            </Link>
-            <Link to="/credentials" className="text-white hover:text-gray-200">
-              Credentials
-            </Link>
-            <Link to="/bridge" className="text-white hover:text-gray-200">
-              Bridge
-            </Link>
-            <Link to="/kyc" className="text-white hover:text-gray-200">
-              KYC
-            </Link>
-          </div>
+          <Link 
+            to="/credentials" 
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            Credentials
+          </Link>
+          <Link 
+            to="/kyc" 
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            KYC
+          </Link>
+          <Link 
+            to="/bridge" 
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            Bridge
+          </Link>
         </div>
-        
-        <div className="flex items-center">
-          <div className="flex items-center space-x-4">
-            <span className="text-white hidden md:inline">
-              {user?.walletAddress ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}` : ''}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="bg-white text-blue-600 px-4 py-2 rounded-md hover:bg-gray-100"
-            >
-              Logout
-            </button>
+
+        {/* User Menu */}
+        <div className="flex items-center space-x-4">
+          <div className="hidden sm:block text-[var(--text-secondary)] truncate max-w-[120px]">
+            {user?.walletAddress && `${user.walletAddress.substring(0, 6)}...${user.walletAddress.substring(user.walletAddress.length - 4)}`}
           </div>
+          <button 
+            onClick={handleLogout}
+            className="dark-button text-sm"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </nav>
