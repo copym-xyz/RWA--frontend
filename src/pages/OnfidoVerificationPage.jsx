@@ -42,18 +42,20 @@ const OnfidoVerificationPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [verificationData, setVerificationData] = useState(null);
   const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [sdkReady, setSdkReady] = useState(false);
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user) || {};
   const containerRef = useRef(null);
   const sdkInitializedRef = useRef(false);
   const maxRetries = 3;
   const retryDelayMs = 1000;
+  const verificationInitialized = useRef(false);
 
   // Effect to load Onfido SDK script
   useEffect(() => {
     let retryCount = 0;
     let scriptElement = null;
-    let styleElement = null;
+    let loadingAttempted = false;
 
     const loadSDK = () => {
       // Check if SDK is already loaded
@@ -63,21 +65,30 @@ const OnfidoVerificationPage = () => {
         return;
       }
 
+      // Prevent exceeding max retries
+      if (retryCount >= maxRetries) {
+        console.error(`Failed to load Onfido SDK after ${maxRetries} attempts`);
+        setError('Failed to load verification SDK. Please refresh the page and try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Track this attempt
+      console.log(`Loading Onfido SDK (attempt ${retryCount + 1}/${maxRetries})`);
+      
       // Remove any existing failed script/style elements
       const existingScript = document.querySelector('script[src*="onfido"]');
       const existingStyle = document.querySelector('link[href*="onfido"]');
       if (existingScript) existingScript.remove();
       if (existingStyle) existingStyle.remove();
-
-      // Load CSS
-      styleElement = document.createElement('link');
-      styleElement.rel = 'stylesheet';
-      styleElement.href = 'https://assets.onfido.com/web-sdk-releases/14.43.0/style.css';
       
-      // Load JavaScript
+      // Load JavaScript with new CDN URL format
       scriptElement = document.createElement('script');
-      scriptElement.src = 'https://assets.onfido.com/web-sdk-releases/14.43.0/onfido.min.js';
+      scriptElement.src = 'https://sdk.onfido.com/v14.43.0';
+      scriptElement.crossOrigin = 'anonymous';
       scriptElement.async = true;
+      scriptElement.type = 'text/javascript';
+      scriptElement.charset = 'utf-8';
 
       scriptElement.onload = () => {
         console.log('Onfido SDK loaded successfully');
@@ -86,7 +97,7 @@ const OnfidoVerificationPage = () => {
 
       scriptElement.onerror = () => {
         console.error(`Failed to load Onfido SDK (attempt ${retryCount + 1}/${maxRetries})`);
-        if (retryCount < maxRetries) {
+        if (retryCount < maxRetries - 1) {
           retryCount++;
           setTimeout(loadSDK, retryDelayMs);
         } else {
@@ -95,16 +106,17 @@ const OnfidoVerificationPage = () => {
         }
       };
 
-      document.head.appendChild(styleElement);
       document.head.appendChild(scriptElement);
     };
 
-    loadSDK();
+    if (!loadingAttempted) {
+      loadingAttempted = true;
+      loadSDK();
+    }
 
     return () => {
       // Cleanup function
       if (scriptElement) scriptElement.remove();
-      if (styleElement) styleElement.remove();
       if (sdkInitializedRef.current) {
         onfidoService.tearDown();
         sdkInitializedRef.current = false;
@@ -112,10 +124,42 @@ const OnfidoVerificationPage = () => {
     };
   }, []);
 
-  // Effect to initialize verification when SDK is loaded
+  // Check when the container element is ready
+  useEffect(() => {
+    const checkContainer = () => {
+      const container = document.getElementById('onfido-mount');
+      if (container) {
+        console.log('Onfido mount container is now available in the DOM');
+        setSdkReady(true);
+        return true;
+      }
+      return false;
+    };
+
+    // Check immediately
+    if (!checkContainer()) {
+      // If not ready, set up a polling mechanism
+      const intervalId = setInterval(() => {
+        if (checkContainer()) {
+          clearInterval(intervalId);
+        }
+      }, 100); // Check every 100ms
+
+      // Clean up interval
+      return () => clearInterval(intervalId);
+    }
+  }, []);
+
+  // Effect to initialize verification when SDK is loaded AND container is ready
   useEffect(() => {
     const initializeVerification = async () => {
-      if (!sdkLoaded || sdkInitializedRef.current) return;
+      // Only proceed if SDK is loaded, container is ready, and we haven't already initialized
+      if (!sdkLoaded || !sdkReady || verificationInitialized.current) {
+        return;
+      }
+
+      verificationInitialized.current = true;
+      console.log('Initializing verification with SDK and container ready');
 
       try {
         setIsLoading(true);
@@ -144,41 +188,51 @@ const OnfidoVerificationPage = () => {
         }
 
         setVerificationData(data);
-        setIsLoading(false);
 
-        // Initialize Onfido SDK
+        // Double check the mount element exists
         const mountElement = document.getElementById('onfido-mount');
+        console.log('Mount element exists before SDK init:', !!mountElement);
+        
         if (!mountElement) {
-          throw new Error('Mount element not found');
+          throw new Error('Mount element not found in DOM');
         }
 
-        sdkInitializedRef.current = true;
-        await onfidoService.initialize(
-          data.sdkToken,
-          data.workflowRunId,
-          {
-            containerId: 'onfido-mount',
-            useModal: true,
-            isModalOpen: true,
-            onComplete: (data) => {
-              console.log('Verification completed:', data);
-              navigate('/kyc', { 
-                state: { 
-                  verificationComplete: true,
-                  applicantId: data.applicantId
-                }
-              });
-            },
-            onError: (error) => {
-              console.error('Verification error:', error);
-              setError(error.message || 'Error during verification process');
-              sdkInitializedRef.current = false;
-            },
-            onModalRequestClose: () => {
-              navigate('/kyc');
+        // Initialize Onfido SDK
+        try {
+          sdkInitializedRef.current = true;
+          onfidoService.initialize(
+            data.sdkToken,
+            data.workflowRunId,
+            {
+              containerId: 'onfido-mount',
+              useModal: true,
+              onComplete: (data) => {
+                console.log('Verification completed:', data);
+                navigate('/kyc', { 
+                  state: { 
+                    verificationComplete: true,
+                    applicantId: data.applicantId
+                  }
+                });
+              },
+              onError: (error) => {
+                console.error('Verification error:', error);
+                setError(error.message || 'Error during verification process');
+                sdkInitializedRef.current = false;
+              },
+              onModalRequestClose: () => {
+                navigate('/kyc');
+              }
             }
-          }
-        );
+          );
+          console.log('Onfido SDK initialized successfully');
+        } catch (error) {
+          console.error('SDK initialization error:', error);
+          setError(error.message || 'Failed to initialize SDK');
+          sdkInitializedRef.current = false;
+        } finally {
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error('Verification initialization error:', error);
         setError(error.message || 'Failed to initialize verification');
@@ -187,7 +241,7 @@ const OnfidoVerificationPage = () => {
     };
 
     initializeVerification();
-  }, [sdkLoaded, navigate, user]);
+  }, [sdkLoaded, sdkReady, navigate, user]);
 
   if (error) {
     return (
@@ -217,6 +271,7 @@ const OnfidoVerificationPage = () => {
     );
   }
 
+  // Make sure we render the container with the ID before trying to use it
   return (
     <div className="min-h-screen flex justify-center items-center p-6">
       <div 

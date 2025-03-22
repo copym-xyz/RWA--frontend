@@ -5,7 +5,7 @@ export const bridgeApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     requestVerification: builder.mutation({
       query: (data) => ({
-        url: '/admin/cross-chain/verification',
+        url: '/admin/cross-chain/verifications',
         method: 'POST',
         body: data,
       }),

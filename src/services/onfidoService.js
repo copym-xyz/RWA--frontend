@@ -1,114 +1,131 @@
-// services/onfidoService.js
+// onfidoService.js
 
-/**
- * Service for interacting with the Onfido SDK
- */
 class OnfidoService {
   constructor() {
-    this.instance = null;
-    this.workflowRunId = null;
+    this.onfido = null;
+    this.containerId = 'onfido-mount';
   }
 
   /**
    * Initialize the Onfido SDK
-   * @param {string} token - The SDK token from the backend
-   * @param {string} workflowRunId - The workflow run ID from the backend
-   * @param {Object} options - SDK initialization options
-   * @returns {Object} - The Onfido SDK instance
+   * @param {string} sdkToken - The SDK token from your backend
+   * @param {string} workflowRunId - The workflow run ID from your backend
+   * @param {Object} options - Additional options
    */
-  initialize(token, workflowRunId, options) {
-    // Check if window.Onfido exists (should be loaded from HTML)
-    if (!window.Onfido) {
-      console.error('Onfido SDK not loaded. The script should be included in the HTML.');
-      throw new Error('Onfido SDK not loaded - the script should be included in the HTML head');
-    }
-    
-    if (this.instance) {
-      console.warn('Onfido SDK already initialized. Tearing down previous instance.');
-      this.tearDown();
+  initialize(sdkToken, workflowRunId, options = {}) {
+    if (!sdkToken) {
+      throw new Error('SDK token is required to initialize Onfido');
     }
 
+    if (!workflowRunId) {
+      throw new Error('Workflow run ID is required for verification');
+    }
+
+    // Ensure Onfido is available globally
+    if (typeof window === 'undefined' || !window.Onfido) {
+      console.error('Onfido SDK not loaded in window. Check your script tag in HTML.');
+      throw new Error('Onfido SDK not available. Make sure the CDN script is included in your HTML.');
+    }
+
+    // Get container ID from options or use default
+    const containerId = options.containerId || this.containerId;
+    
+    // Check if the mount element exists immediately
+    const mountElement = document.getElementById(containerId);
+    if (!mountElement) {
+      console.error(`Element ID ${containerId} does not exist in current page body`);
+      throw new Error(`Element ID ${containerId} does not exist`);
+    }
+
+    // Default configuration for workflow-based verification
+    const defaultOptions = {
+      token: sdkToken,
+      containerId: containerId,
+      workflowRunId: workflowRunId,
+      useModal: true,
+      isModalOpen: true,
+      steps: ['welcome', 'document', 'face'],
+      onModalRequestClose: () => {
+        if (this.onfido) {
+          this.tearDown();
+          if (options.onModalRequestClose) {
+            options.onModalRequestClose();
+          }
+        }
+      },
+      onComplete: (data) => {
+        console.log('Onfido verification completed:', data);
+        if (options.onComplete) {
+          options.onComplete(data);
+        }
+      },
+      onError: (error) => {
+        console.error('Onfido error:', error);
+        if (options.onError) {
+          options.onError(error);
+        }
+      }
+    };
+
+    // Merge default options with passed options
+    const mergedOptions = { ...defaultOptions, ...options };
+    
     try {
-      console.log('Initializing Onfido SDK with token and options', { workflowRunId, containerId: options.containerId });
+      console.log('Initializing Onfido SDK with options:', {
+        containerId: mergedOptions.containerId,
+        workflowRunId: mergedOptions.workflowRunId,
+        useModal: mergedOptions.useModal,
+        steps: mergedOptions.steps
+      });
       
-      // Save workflowRunId for future reference
-      this.workflowRunId = workflowRunId;
-      
-      // Ensure options has default values
-      const completeOptions = {
-        ...options,
-        useModal: options.useModal !== undefined ? options.useModal : false,
-        isModalOpen: options.isModalOpen !== undefined ? options.isModalOpen : false,
-        onModalRequestClose: options.onModalRequestClose || (() => {}),
-      };
-      
-      // Check that we're using a specific version
-      const sdkVersion = window.Onfido?.VERSION || 'unknown';
-      console.log(`Using Onfido SDK version: ${sdkVersion}`);
-      
-      // Initialize Onfido with workflow
-      this.instance = window.Onfido.init({
-        token,
-        workflowRunId,
-        containerId: completeOptions.containerId,
-        useModal: completeOptions.useModal,
-        isModalOpen: completeOptions.isModalOpen,
-        onModalRequestClose: completeOptions.onModalRequestClose,
-        onComplete: (data) => {
-          console.log('Onfido workflow completed');
-          if (completeOptions.onComplete) {
-            completeOptions.onComplete(data);
-          }
-        },
-        onError: (error) => {
-          console.error('Onfido SDK error:', error);
-          if (completeOptions.onError) {
-            completeOptions.onError(error);
-          }
+      // Initialize the Onfido SDK with workflow
+      this.onfido = window.Onfido.init({
+        ...mergedOptions,
+        workflow: {
+          workflowRunId: workflowRunId,
+          token: sdkToken
         }
       });
       
-      console.log('Onfido SDK initialized successfully');
-      return this.instance;
+      // Open modal if using modal mode
+      if (mergedOptions.useModal && mergedOptions.isModalOpen) {
+        this.start();
+      }
+      
+      return this;
     } catch (error) {
       console.error('Error initializing Onfido SDK:', error);
       throw error;
     }
   }
 
-  /**
-   * Tear down the Onfido SDK instance
-   */
+  start() {
+    if (!this.onfido) {
+      throw new Error('Onfido SDK not initialized');
+    }
+    
+    try {
+      this.onfido.setOptions({
+        isModalOpen: true,
+        shouldCloseOnOverlayClick: false,
+      });
+    } catch (error) {
+      console.error('Error starting Onfido SDK:', error);
+      throw error;
+    }
+  }
+
   tearDown() {
-    if (this.instance) {
+    if (this.onfido) {
       try {
-        console.log('Tearing down Onfido SDK instance');
-        this.instance.tearDown();
-        this.instance = null;
-        this.workflowRunId = null;
+        this.onfido.tearDown();
+        this.onfido = null;
+        console.log('Onfido SDK torn down successfully');
       } catch (error) {
         console.error('Error tearing down Onfido SDK:', error);
       }
     }
   }
-
-  /**
-   * Get the current Onfido instance
-   * @returns {Object|null} - The current Onfido instance or null
-   */
-  getInstance() {
-    return this.instance;
-  }
-
-  /**
-   * Check if the SDK is currently initialized
-   * @returns {boolean} - Whether the SDK is initialized
-   */
-  isInitialized() {
-    return !!this.instance;
-  }
 }
 
-// Create and export a singleton instance
-const onfidoService = new OnfidoService();
-export default onfidoService;
+export default new OnfidoService();
